@@ -65,8 +65,8 @@ entryPoints:
 # certificatesResolvers:
 #   myresolver:
 #     acme:
-#       email: brian@56k.cloud
+#       email: lorenzo@gmail.com
 #       storage: acme.json
 #       dnsChallenge:
-#         provider: digitalocean
+#         provider: azure
 #         delayBeforeCheck: 0

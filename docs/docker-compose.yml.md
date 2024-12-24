@@ -1,6 +1,11 @@
-version: '3'
+# `docker-compose.yml` documentation
 
-services:
+This `docker-compose.yml` file sets up a monitoring and reverse proxy system using Traefik, Prometheus, Grafana, and custom services. Below is a detailed explanation of the configuration:
+
+## Services
+
+### Traefik
+```yml
   traefik:
     image: traefik:v2.3
     networks:
@@ -8,11 +13,32 @@ services:
       - inbound
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik.yml:/etc/traefik/traefik.yml
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 5s
+```
 
+- **Image:** Traefik v2.3 is used as the reverse proxy and load balancer.
+- **etworks:** Connected to traefik (internal) and inbound (external-facing) overlay networks.
+- **Ports:**
+    - **80:** Handles HTTP traffic.
+    - **443:** Handles HTTPS traffic.
+    - **8080:** Exposes the Traefik dashboard and API.
+- **Volumes:**
+  - **docker.sock:** Allows Traefik to interact with the Docker engine and detect services.
+  - **traefik.yml:** Traefik's configuration file.
+- **healthcheck:** for the Traefik service to ensure it is running and healthy.
+
+### Prometheus
+```yml
   prometheus:
     image: prom/prometheus:v2.22.1
     networks:
@@ -37,7 +63,19 @@ services:
           - node.role==manager
       restart_policy:
         condition: on-failure
-  
+```
+
+- **Image:** Prometheus for metrics collection and monitoring.
+- **Volumes:**
+  - Prometheus configuration files and data persistence.
+- **Command:** Specifies paths for configuration and storage.
+- **Deploy:**
+  - **Labels:** Configure Traefik to route `prometheus.localhost` to this service on port 9090.
+  - **Placement:** Restricts the service to manager nodes in the Docker Swarm.
+  - **Restart Policy:** Restarts the service on failure.
+
+### Grafana
+```yml
   grafana:
     image: grafana/grafana:7.3.1
     networks:
@@ -49,7 +87,7 @@ services:
       - ./grafana/provisioning/:/etc/grafana/provisioning/
     env_file:
       - ./grafana/config.monitoring
-    user: "104" # admin foobar
+    user: "104"
     deploy:
       labels:
         - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
@@ -62,7 +100,15 @@ services:
           - node.role == manager
       restart_policy:
         condition: on-failure
+```
 
+- **Image:** Grafana for visualization and dashboards.
+- **Depends On:** Starts only after Prometheus is running.
+- **Deploy:**
+  - **Labels:** Routes `grafana.localhost` to Grafana (port 3000).
+
+### SaveWW
+```yml
   saveww:
     image: lorenzouriel147/save-ww:v1
     networks:
@@ -83,7 +129,17 @@ services:
         - "traefik.http.middlewares.saveww-ratelimit.ratelimit.average=2"
         - "traefik.http.middlewares.saveww-retry.retry.attempts=4"
         - "traefik.docker.network=inbound"
+```
 
+- **Image:** A custom service (`save-ww`) configured with several middlewares:
+  - **BasicAuth:** Protects routes with username and password.
+  - **Compress:** Enables response compression.
+  - **Error Pages:** Routes errors to a dedicated service (`error`).
+  - **Rate Limiting:** Limits requests to 2 per second.
+  - **Retry:** Retries failed requests up to 4 times.
+
+### Error Pages
+```yml
   error:
     image: guillaumebriday/traefik-custom-error-pages
     networks:
@@ -96,7 +152,12 @@ services:
         - "traefik.http.services.error.loadbalancer.server.port=80"
         - "traefik.http.routers.error.entrypoints=web"
         - "traefik.docker.network=inbound"
+```
 
+- **Image:**Displays custom error pages for failed requests.
+
+### Networks
+```yml
 networks:
   traefik:
     driver: overlay
@@ -104,7 +165,15 @@ networks:
   inbound:
     driver: overlay
     name: inbound
+```
 
+- **Overlay Networks:** Ensure communication between containers across Swarm nodes.
+
+### Volumes
+```yml
 volumes:
   prometheus_data: {}
   grafana_data: {}
+```
+
+- **Persistent Storage:** Keeps Prometheus and Grafana data across container restarts.
