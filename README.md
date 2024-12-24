@@ -1,4 +1,4 @@
-# Traefik Save Walter White Stack
+# Traefik Save Walter White 
 
 This project sets up a monitoring stack using Traefik, Prometheus, Grafana, and custom services. It leverages Docker Swarm to manage the deployment of the stack.
 
@@ -14,13 +14,13 @@ This project sets up a monitoring stack using Traefik, Prometheus, Grafana, and 
 2. Access to the command line to run `docker` commands.
 
 ## Services Overview
-| Service     | Description                         | Hostname                  | Port  |
-|-------------|-------------------------------------|---------------------------|-------|
-| **Traefik** | Reverse proxy and load balancer     | `localhost:8080`   | 80, 443, 8080 |
+| Service     | Description                          | Hostname                  | Port  |
+|-------------|--------------------------------------|---------------------------|-------|
+| **Traefik** | Reverse proxy and load balancer      | `localhost:8080`   | 80, 443, 8080 |
 | **Prometheus** | Metrics collection and monitoring | `prometheus.localhost`    | 9090  |
-| **Grafana** | Data visualization dashboards       | `grafana.localhost`       | 3000  |
-| **SaveWW**  | Custom service                      | `saveww.localhost`        | 80    |
-| **Error**   | Custom error pages                 | `error.localhost`         | 80    |
+| **Grafana** | Data visualization dashboards        | `grafana.localhost`       | 3000  |
+| **SaveWW**  | Custom service                       | `saveww.localhost`        | 80    |
+| **Error**   | Custom error pages                   | `error.localhost`         | 80    |
 
 ## Deployment Instructions
 
@@ -52,4 +52,31 @@ docker stack rm traefik
 
 ## Architecture
 
-![architecture]
+```markdown
+                        +-----------------+
+                        |     Traefik     |
+                        | (Reverse Proxy) |
+                        +--------+--------+
+                                 |
+                                 |
+                  +-----------------------------+----------------+
+                  |              |              |                |
+                  |              |              |                |
+      +-----------v-----------+  |  +-----------v-----------+    |
+      |     Prometheus         | |   |     Grafana           |   |
+      | (Metrics Server)       | |   | (Dashboard Server)    |   |
+      +------------------------+ |   +-----------------------+   |
+                  |              |                               |
+                  +--------------+-------------------------------+
+                                 |                               |
+                         +-------v-------+             +-------v-------+
+                         |     Saveww    |             |     Error     |
+                         | (Custom App)  |             | (Error Pages) |
+                         +---------------+             +---------------+
+                
+        
+        +----v-----+
+        | Inbound  |
+        | Network  |
+        +----------+
+```
