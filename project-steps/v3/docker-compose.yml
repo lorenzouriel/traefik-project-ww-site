@@ -5,12 +5,7 @@ services:
     # The latest official supported Traefik docker image
     image: traefik:v2.3
     # Enables the Traefik Dashboard and tells Traefik to listen to docker
-    # --providers tell Traefik to connect to the Docker provider
     # enable --log.level=INFO so we can see what Traefik is doing in the log files
-    environment:
-      - TRAEFIK_API_INSECURE=true
-      - TRAEFIK_PROVIDERS_DOCKER=true
-      - TRAEFIK_LOG_LEVEL=INFO
     ports:
       # Exposes port 80 for incoming web requests
       - "80:80"
@@ -19,11 +14,17 @@ services:
     volumes:
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.yml:/etc/traefik/traefik.yml
 
 # Add the whoami service
-  whoami:
+  saveww:
      # A container that exposes an API to show its IP address
-     image: containous/whoami
+     image: lorenzouriel147/save-ww:v1
      # We set a label to tell Traefik to assign a hostname to the new service
      labels:
-       - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+       - traefik.enable=true
+       - "traefik.http.routers.saveww.rule=Host(`saveww.localhost`)"
+       - "traefik.http.routers.saveww.entrypoints=web"
+       - "traefik.http.routers.saveww.service=saveww"
+       
+       - "traefik.http.services.saveww.loadbalancer.server.port=80"
