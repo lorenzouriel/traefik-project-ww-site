@@ -23,4 +23,8 @@ services:
      # We set a label to tell Traefik to assign a hostname to the new service
      labels:
        - traefik.enable=true
-       - "traefik.http.routers.saveww.rule=Host(`saveww.docker.localhost`)"
+       - "traefik.http.routers.saveww.rule=Host(`saveww.localhost`)"
+       - "traefik.http.routers.saveww.entrypoints=web"
+       - "traefik.http.routers.saveww.service=saveww"
+       
+       - "traefik.http.services.saveww.loadbalancer.server.port=80"
