@@ -22,9 +22,34 @@ services:
      image: lorenzouriel147/save-ww:v1
      # We set a label to tell Traefik to assign a hostname to the new service
      labels:
-       - traefik.enable=true
+       - "traefik.enable=true"
+      # Routers
        - "traefik.http.routers.saveww.rule=Host(`saveww.localhost`)"
-       - "traefik.http.routers.saveww.entrypoints=web"
        - "traefik.http.routers.saveww.service=saveww"
-       
+       - "traefik.http.routers.saveww.entrypoints=web"
+       - "traefik.http.routers.saveww.middlewares=saveww-auth,saveww-compress,saveww-errorpages,saveww-ratelimit, saveww-retry"
+      # Services
        - "traefik.http.services.saveww.loadbalancer.server.port=80"
+      # Middleware BasicAuth
+       - "traefik.http.middlewares.saveww-auth.basicauth.users=whoisheisenberg:$$apr1$$oP8nSKa.$$TITERRdBsJCxX7VkfB8WL1"
+        # Password: whoisheisenberg walterwhite
+      # Compress Middleware
+       - "traefik.http.middlewares.saveww-compress.compress=true"
+      # Error Pages Middleware
+       - "traefik.http.middlewares.saveww-errorpages.errors.status=400-599"
+       - "traefik.http.middlewares.saveww-errorpages.errors.service=error"
+       - "traefik.http.middlewares.saveww-errorpages.errors.query=/{status}.html"
+      # Rate Limit Middleware
+       - "traefik.http.middlewares.saveww-ratelimit.ratelimit.average=2"
+      # Retry in case of error
+       - "traefik.http.middlewares.saveww-retry.retry.attempts=4"
+
+  # Error Page service
+  error:
+    image: guillaumebriday/traefik-custom-error-pages
+    labels:
+          - "traefik.enable=true"
+          - "traefik.http.routers.error.rule=Host(`error.localhost`)"
+          - "traefik.http.routers.error.service=error"
+          - "traefik.http.services.error.loadbalancer.server.port=80"
+          - "traefik.http.routers.error.entrypoints=web"
